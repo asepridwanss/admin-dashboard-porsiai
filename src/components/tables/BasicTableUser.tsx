@@ -3,32 +3,62 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Pencil, Trash } from "lucide-react";
-import { getAllMahasiswa } from "../../../lib//firebase//service"; // Pastikan path-nya sesuai
+import { getAllMahasiswa } from "@/lib/requestAPI";
 
 export default function DataMahasiswaTable() {
   const [mahasiswa, setMahasiswa] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const data = await getAllMahasiswa();
-        setMahasiswa(data);
-      } catch (error) {
-        console.error("Gagal mengambil data mahasiswa:", error);
-      } finally {
-        setLoading(false);
+  // 🔁 Ambil dari sessionStorage jika ada
+  const loadFromSession = () => {
+    try {
+      const stored = sessionStorage.getItem("mahasiswa");
+      if (stored) {
+        return JSON.parse(stored);
       }
+    } catch (err) {
+      console.error("Gagal parsing session mahasiswa:", err);
     }
+    return null;
+  };
 
-    fetchData();
+  // 🔁 Simpan ke sessionStorage
+  const saveToSession = (data: any[]) => {
+    sessionStorage.setItem("mahasiswa", JSON.stringify(data));
+  };
+
+  const fetchData = async () => {
+    try {
+      const data = await getAllMahasiswa();
+      setMahasiswa(data);
+      saveToSession(data); // update session
+    } catch (error) {
+      console.error("Gagal mengambil data mahasiswa:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const cached = loadFromSession();
+    if (cached) {
+      setMahasiswa(cached);
+      setLoading(false);
+      // Optional: Fetch ulang di background untuk sinkronisasi
+      fetchData();
+    } else {
+      fetchData(); // Tidak ada cache, ambil langsung
+    }
   }, []);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md">
       <div className="p-6 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Data Mahasiswa</h2>
-        <Link href="/user/form" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+        <Link
+          href="/user/form"
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+        >
           Tambah
         </Link>
       </div>
@@ -70,12 +100,14 @@ export default function DataMahasiswaTable() {
                   <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.nim}</td>
                   <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.telepon}</td>
                   <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.email}</td>
-                  <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.skripsi}</td>
+                  <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.judulSkripsi}</td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex justify-center gap-2">
-                      <button className="p-1.5 bg-yellow-100 dark:bg-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-300">
-                        <Pencil size={16} className="text-yellow-600" />
-                      </button>
+                      <Link href={`/user/form?id=${data.id}`}>
+                        <button className="p-1.5 bg-yellow-100 dark:bg-yellow-200 rounded hover:bg-yellow-200 dark:hover:bg-yellow-300">
+                          <Pencil size={16} className="text-yellow-600" />
+                        </button>
+                      </Link>
                       <button className="p-1.5 bg-red-100 dark:bg-red-200 rounded hover:bg-red-200 dark:hover:bg-red-300">
                         <Trash size={16} className="text-red-600" />
                       </button>
