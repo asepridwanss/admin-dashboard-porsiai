@@ -1,59 +1,118 @@
 "use client";
-import React, { useState } from 'react';
-import ComponentCard from '../../common/ComponentCard';
-import Label from '../Label';
-import Input from '../input/InputField';
-import Select from '../Select';
+import React, { useEffect, useState } from "react";
+import ComponentCard from "../../common/ComponentCard";
+import Label from "../Label";
+import Input from "../input/InputField";
 import TextArea from "../input/TextArea";
-import { ChevronDownIcon, EyeCloseIcon, EyeIcon, TimeIcon } from '../../../icons';
-import DatePicker from '@/components/form/date-picker';
+import { useRouter } from "next/navigation";
 
-export default function DefaultInputs() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
-  const [messageTwo, setMessageTwo] = useState("");
-  const options = [
-    { value: "marketing", label: "Marketing" },
-    { value: "template", label: "Template" },
-    { value: "development", label: "Development" },
-  ];
-  const handleSelectChange = (value: string) => {
-    console.log("Selected value:", value);
+type Props = {
+  id?: string | string[];
+};
+
+export default function DefaultInputs({ id }: Props) {
+  const router = useRouter();
+
+  const [formData, setFormData] = useState({
+    nama: "",
+    nim: "",
+    telepon: "",
+    email: "",
+    judulSkripsi: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Ambil data jika edit
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/user?id=${id}`);
+        const data = await res.json();
+        console.log(data);
+        setFormData({
+          nama: data.nama || "",
+          nim: data.nim || "",
+          telepon: data.telepon || "",
+          email: data.email || "",
+          judulSkripsi: data.judulSkripsi || "",
+        });
+      } catch (error) {
+        console.error("Gagal mengambil data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
+
+  const handleTextAreaChange = (val: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      judulSkripsi: val,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    const endpoint = "/api/user" ;
+
+    const res = await fetch(endpoint, {
+      method: id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...formData }),
+    });
+
+    if (res.ok) {
+      alert("Berhasil disimpan");
+      router.push("/user");
+    } else {
+      alert("Gagal menyimpan data");
+    }
+  };
+
   return (
-    <ComponentCard title="Input Data Mahasiswa">
+    <ComponentCard title={id ? "Edit Data Mahasiswa" : "Input Data Mahasiswa"}>
       <div className="space-y-6">
         <div>
           <Label>Nama</Label>
-          <Input type="text" />
+          <Input name="nama" type="text" defaultValue={formData.nama} onChange={handleChange} />
         </div>
         <div>
           <Label>NIM</Label>
-          <Input type="text" />
+          <Input name="nim" type="text" defaultValue={formData.nim} onChange={handleChange} />
         </div>
         <div>
           <Label>No. Telepon</Label>
-          <Input type="text" />
+          <Input name="telepon" type="text" defaultValue={formData.telepon} onChange={handleChange} />
         </div>
         <div>
           <Label>Email</Label>
-          <Input type="text" />
+          <Input name="email" type="text" defaultValue={formData.email} onChange={handleChange} />
         </div>
         <div>
           <Label>Judul Skripsi</Label>
-          <TextArea
-            value={message}
-            onChange={(value) => setMessage(value)}
-            rows={6}
-          />
+          <TextArea value={formData.judulSkripsi} onChange={handleTextAreaChange} rows={6} />
         </div>
         <div>
-            <button
-                type="button"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-            >
-                Simpan
-            </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            disabled={loading}
+          >
+            {loading ? "Memuat..." : "Simpan"}
+          </button>
         </div>
       </div>
     </ComponentCard>

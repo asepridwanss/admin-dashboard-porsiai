@@ -6,7 +6,9 @@ import Input from "../input/InputField";
 import { EnvelopeIcon } from "../../../icons";
 import PhoneInput from "../group-input/PhoneInput";
 
-export default function InputGroup() {
+export default function InputGroup({id}:{id:string}) {
+
+  console.log(id);
   const countries = [
     { code: "US", label: "+1" },
     { code: "GB", label: "+44" },

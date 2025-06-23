@@ -105,12 +105,7 @@ const AppSidebar: React.FC = () => {
               {(isExpanded || isHovered || isMobileOpen) && (
                 <>
                   <span className="menu-item-text">{nav.name}</span>
-                  <ChevronDownIcon
-                    className={`ml-auto w-5 h-5 transition-transform duration-200 ${
-                      openSubmenu === index
-                        ? "rotate-180 text-brand-500"
-                        : ""
-                    }`}
+                  <ChevronDownIcon 
                   />
                 </>
               )}
