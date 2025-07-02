@@ -16,6 +16,7 @@ export default function DefaultInputs({ id }: Props) {
   const [formData, setFormData] = useState({
     nama: "",
     nim: "",
+    password: "",
     telepon: "",
     email: "",
     judulSkripsi: "",
@@ -26,16 +27,16 @@ export default function DefaultInputs({ id }: Props) {
   // ✅ Ambil data jika edit
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
 
+    setLoading(true);
     const fetchData = async () => {
       try {
         const res = await fetch(`/api/user?id=${id}`);
         const data = await res.json();
-        console.log(data);
         setFormData({
           nama: data.nama || "",
           nim: data.nim || "",
+          password: data.password || "",
           telepon: data.telepon || "",
           email: data.email || "",
           judulSkripsi: data.judulSkripsi || "",
@@ -65,44 +66,83 @@ export default function DefaultInputs({ id }: Props) {
   };
 
   const handleSubmit = async () => {
-    const endpoint = "/api/user" ;
+    const endpoint = "/api/user";
+    const method = id ? "PUT" : "POST";
 
     const res = await fetch(endpoint, {
-      method: id ? "PUT" : "POST",
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...formData }),
+      body: JSON.stringify({ ...formData, id: id || undefined }),
     });
 
     if (res.ok) {
       alert("Berhasil disimpan");
+
+      // ✅ Tandai bahwa data baru ditambahkan
+      if (!id) sessionStorage.setItem("newPost", "true");
+
       router.push("/user");
     } else {
       alert("Gagal menyimpan data");
     }
   };
 
+
   return (
     <ComponentCard title={id ? "Edit Data Mahasiswa" : "Input Data Mahasiswa"}>
       <div className="space-y-6">
         <div>
           <Label>Nama</Label>
-          <Input name="nama" type="text" defaultValue={formData.nama} onChange={handleChange} />
+          <Input
+            name="nama"
+            type="text"
+            defaultValue={formData.nama}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <Label>NIM</Label>
-          <Input name="nim" type="text" defaultValue={formData.nim} onChange={handleChange} />
+          <Input
+            name="nim"
+            type="text"
+            defaultValue={formData.nim}
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <Label>Password</Label>
+          <Input
+            name="password"
+            type="password"
+            defaultValue={formData.password}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <Label>No. Telepon</Label>
-          <Input name="telepon" type="text" defaultValue={formData.telepon} onChange={handleChange} />
+          <Input
+            name="telepon"
+            type="text"
+            defaultValue={formData.telepon}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <Label>Email</Label>
-          <Input name="email" type="text" defaultValue={formData.email} onChange={handleChange} />
+          <Input
+            name="email"
+            type="text"
+            defaultValue={formData.email}
+            onChange={handleChange}
+          />
         </div>
         <div>
           <Label>Judul Skripsi</Label>
-          <TextArea value={formData.judulSkripsi} onChange={handleTextAreaChange} rows={6} />
+          <TextArea
+            value={formData.judulSkripsi}
+            onChange={handleTextAreaChange}
+            rows={6}
+          />
         </div>
         <div>
           <button
