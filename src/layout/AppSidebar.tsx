@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+
 import {
-  GridIcon,
   TableIcon,
   ListIcon,
   ChevronDownIcon,
@@ -191,7 +191,7 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link href="/">
+        <Link href="/user">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
               { <Image
