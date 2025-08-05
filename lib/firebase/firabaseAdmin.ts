@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import admin from "firebase-admin";
 import { getApps } from "firebase-admin/app";
 // const serviceAccount= require('../../serviceAccountKey.json')

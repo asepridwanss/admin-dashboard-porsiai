@@ -1,14 +1,32 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { getAllMahasiswa } from "@/lib/requestAPI";
+import Pagination from "@/components/tables/Pagination";
+
+type Mahasiswa = {
+  id: string;
+  nama: string;
+  nim: string;
+  password: string;
+  telepon: string;
+  email: string;
+  judulSkripsi: string;
+};
 
 export default function DataMahasiswaTable() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [mahasiswa, setMahasiswa] = useState<any[]>([]);
+  const [mahasiswa, setMahasiswa] = useState<Mahasiswa[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(mahasiswa.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = mahasiswa.slice(startIndex, endIndex);
 
   const loadFromSession = () => {
     try {
@@ -21,12 +39,12 @@ export default function DataMahasiswaTable() {
     }
     return null;
   };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const saveToSession = (data: any[]) => {
+
+  const saveToSession = (data: Mahasiswa[]) => {
     sessionStorage.setItem("mahasiswa", JSON.stringify(data));
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const data = await getAllMahasiswa();
       setMahasiswa(data);
@@ -36,21 +54,24 @@ export default function DataMahasiswaTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDelete = async (id: string) => {
     const confirmed = confirm("Yakin ingin menghapus data ini?");
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`/api/user?id=${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/user?id=${id}`, { method: "DELETE" });
 
       if (res.ok) {
         const updated = mahasiswa.filter((item) => item.id !== id);
         setMahasiswa(updated);
         saveToSession(updated);
+
+        if (startIndex >= updated.length && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+
         alert("Data berhasil dihapus.");
       } else {
         alert("Gagal menghapus data.");
@@ -66,11 +87,11 @@ export default function DataMahasiswaTable() {
     if (cached) {
       setMahasiswa(cached);
       setLoading(false);
-      fetchData(); // Sync in background
+      fetchData();
     } else {
       fetchData();
     }
-  }, []);
+  }, [fetchData]);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-md">
@@ -105,19 +126,21 @@ export default function DataMahasiswaTable() {
                   Memuat data...
                 </td>
               </tr>
-            ) : mahasiswa.length === 0 ? (
+            ) : currentData.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                   Tidak ada data mahasiswa.
                 </td>
               </tr>
             ) : (
-              mahasiswa.map((data, index) => (
+              currentData.map((data, index) => (
                 <tr
                   key={data.id}
                   className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                  <td className="px-4 py-4 text-gray-800 dark:text-gray-100">{index + 1}</td>
+                  <td className="px-4 py-4 text-gray-800 dark:text-gray-100">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
                   <td className="px-4 py-4 text-gray-800 dark:text-gray-100">{data.nama}</td>
                   <td className="px-4 py-4 text-gray-800 dark:text-gray-100">{data.nim}</td>
                   <td className="px-4 py-4 text-gray-800 dark:text-gray-100">{data.password}</td>
@@ -147,6 +170,16 @@ export default function DataMahasiswaTable() {
           </tbody>
         </table>
       </div>
+
+      {mahasiswa.length > itemsPerPage && (
+        <div className="flex justify-center px-6 py-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        </div>
+      )}
     </div>
   );
 }

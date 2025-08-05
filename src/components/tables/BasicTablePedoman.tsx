@@ -1,15 +1,30 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { getAllPedoman } from "@/lib/requestAPI";
+import Pagination from "@/components/tables/Pagination";
+
+type Pedoman = {
+  id: string;
+  poinBab: string;
+  contoh: string;
+  konteks: string;
+};
 
 export default function DataPedomanTable() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pedoman, setPedoman] = useState<any[]>([]);
+  const [pedoman, setPedoman] = useState<Pedoman[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRowIndex, setExpandedRowIndex] = useState<number | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const totalPages = Math.ceil(pedoman.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = pedoman.slice(startIndex, endIndex);
 
   const loadFromSession = () => {
     try {
@@ -20,12 +35,12 @@ export default function DataPedomanTable() {
     }
     return null;
   };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const saveToSession = (data: any[]) => {
+
+  const saveToSession = (data: Pedoman[]) => {
     sessionStorage.setItem("pedoman", JSON.stringify(data));
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const data = await getAllPedoman();
       setPedoman(data);
@@ -35,7 +50,7 @@ export default function DataPedomanTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleDelete = async (id: string) => {
     const confirmed = confirm("Yakin ingin menghapus data ini?");
@@ -47,6 +62,11 @@ export default function DataPedomanTable() {
         const updated = pedoman.filter((item) => item.id !== id);
         setPedoman(updated);
         saveToSession(updated);
+
+        if (startIndex >= updated.length && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        }
+
         alert("Data berhasil dihapus.");
       } else {
         alert("Gagal menghapus data.");
@@ -62,11 +82,11 @@ export default function DataPedomanTable() {
     if (cached) {
       setPedoman(cached);
       setLoading(false);
-      fetchData(); // tetap ambil terbaru
+      fetchData();
     } else {
       fetchData();
     }
-  }, []);
+  }, [fetchData]);
 
   const truncate = (text: string, maxLength = 80) =>
     text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
@@ -102,20 +122,22 @@ export default function DataPedomanTable() {
                   Memuat data...
                 </td>
               </tr>
-            ) : pedoman.length === 0 ? (
+            ) : currentData.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
                   Tidak ada data pedoman.
                 </td>
               </tr>
             ) : (
-              pedoman.map((data, index) => (
+              currentData.map((data, index) => (
                 <React.Fragment key={data.id}>
                   <tr
                     className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                     onClick={() => toggleExpand(index)}
                   >
-                    <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{index + 1}</td>
+                    <td className="px-6 py-4 text-gray-800 dark:text-gray-100">
+                      {(currentPage - 1) * itemsPerPage + index + 1}
+                    </td>
                     <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{data.poinBab}</td>
                     <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{truncate(data.contoh)}</td>
                     <td className="px-6 py-4 text-gray-800 dark:text-gray-100">{truncate(data.konteks)}</td>
@@ -153,6 +175,16 @@ export default function DataPedomanTable() {
           </tbody>
         </table>
       </div>
+
+      {pedoman.length > itemsPerPage && (
+        <div className="flex justify-center px-6 py-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        </div>
+      )}
     </div>
   );
 }

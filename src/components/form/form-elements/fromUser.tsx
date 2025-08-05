@@ -5,6 +5,7 @@ import Label from "../Label";
 import Input from "../input/InputField";
 import TextArea from "../input/TextArea";
 import { useRouter } from "next/navigation";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 type Props = {
   id?: string | string[];
@@ -23,8 +24,12 @@ export default function DefaultInputs({ id }: Props) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [errorNIM, setErrorNIM] = useState("");
+  const [errorEmail, setErrorEmail] = useState("");
+  const [errorPassword, setErrorPassword] = useState("");
+  const [errorTelepon, setErrorTelepon] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  // ✅ Ambil data jika edit
   useEffect(() => {
     if (!id) return;
 
@@ -65,7 +70,46 @@ export default function DefaultInputs({ id }: Props) {
     }));
   };
 
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidPassword = (password: string): boolean => {
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    return strongPasswordRegex.test(password);
+  };
+
+  const isNumeric = (value: string): boolean => /^\d+$/.test(value);
+
   const handleSubmit = async () => {
+    setErrorNIM("");
+    setErrorEmail("");
+    setErrorPassword("");
+    setErrorTelepon("");
+
+    if (!isNumeric(formData.nim)) {
+      setErrorNIM("NIM harus berupa angka.");
+      return;
+    }
+
+    if (!isNumeric(formData.telepon)) {
+      setErrorTelepon("Nomor telepon harus berupa angka.");
+      return;
+    }
+
+    if (!isValidEmail(formData.email)) {
+      setErrorEmail("Format email tidak valid.");
+      return;
+    }
+
+    if (!isValidPassword(formData.password)) {
+      setErrorPassword(
+        "Password harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, angka, dan simbol."
+      );
+      return;
+    }
+
     const endpoint = "/api/user";
     const method = id ? "PUT" : "POST";
 
@@ -75,18 +119,28 @@ export default function DefaultInputs({ id }: Props) {
       body: JSON.stringify({ ...formData, id: id || undefined }),
     });
 
+    const result = await res.json();
+
+    if (res.status === 409) {
+      setErrorNIM(result.error || "NIM sudah digunakan.");
+      return;
+    }
+
+    if (res.status === 410) {
+      setErrorEmail(result.error || "Email sudah digunakan.");
+      return;
+    }
+
     if (res.ok) {
       alert("Berhasil disimpan");
 
-      // ✅ Tandai bahwa data baru ditambahkan
       if (!id) sessionStorage.setItem("newPost", "true");
 
       router.push("/user");
     } else {
-      alert("Gagal menyimpan data");
+      alert(result.error || "Gagal menyimpan data");
     }
   };
-
 
   return (
     <ComponentCard title={id ? "Edit Data Mahasiswa" : "Input Data Mahasiswa"}>
@@ -108,15 +162,29 @@ export default function DefaultInputs({ id }: Props) {
             defaultValue={formData.nim}
             onChange={handleChange}
           />
+          {errorNIM && <p className="text-red-500 text-sm mt-1">{errorNIM}</p>}
         </div>
         <div>
           <Label>Password</Label>
-          <Input
-            name="password"
-            type="password"
-            defaultValue={formData.password}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              defaultValue={formData.password}
+              onChange={handleChange}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+            </button>
+          </div>
+          {errorPassword && (
+            <p className="text-red-500 text-sm mt-1">{errorPassword}</p>
+          )}
         </div>
         <div>
           <Label>No. Telepon</Label>
@@ -126,6 +194,9 @@ export default function DefaultInputs({ id }: Props) {
             defaultValue={formData.telepon}
             onChange={handleChange}
           />
+          {errorTelepon && (
+            <p className="text-red-500 text-sm mt-1">{errorTelepon}</p>
+          )}
         </div>
         <div>
           <Label>Email</Label>
@@ -135,6 +206,7 @@ export default function DefaultInputs({ id }: Props) {
             defaultValue={formData.email}
             onChange={handleChange}
           />
+          {errorEmail && <p className="text-red-500 text-sm mt-1">{errorEmail}</p>}
         </div>
         <div>
           <Label>Judul Skripsi</Label>
